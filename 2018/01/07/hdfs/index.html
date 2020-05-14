@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>HDFS 简介 | moon pie</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <link rel="shortcut icon" href="/favicon.ico">
+  
+<link rel="stylesheet" href="/css/app.css">
+
+  <!-- <link rel='stylesheet' href='http://fonts.useso.com/css?family=Source+Code+Pro'> -->
+  
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <nav class="app-nav">
+  
+    
+      <a href="/.">home</a>
+    
+  
+    
+      <a href="/archives">archive</a>
+    
+  
+    
+      <a href="/atom.xml">rss</a>
+    
+  
+</nav>
+
+  <main class="post">
+  <article>
+  <h1 class="article-title">
+    <a href="/2018/01/07/hdfs/">HDFS 简介</a>
+  </h1>
+
+  <section class="article-meta">
+    <p class="article-date">January 07 2018</p>
+  </section>
+
+  <section class="article-entry">
+    <h3 id="这是一篇关于HDFS-的文章">这是一篇关于HDFS 的文章</h3>
+<hr>
+<h4 id="hdfs-web">hdfs web</h4>
+<p><a href="https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/HdfsDesign.html" target="_blank" rel="noopener">Apache官网</a></p>
+<h4 id="hdfs-简介">hdfs 简介</h4>
+<p>Hadoop分布式文件系统(HDFS)是一个设计用于在廉价硬件上运行的分布式文件系统。HDFS是高度容错的，设计用于部署在低成本硬件上。HDFS提供对应用程序数据的高吞吐量访问，适用于具有大数据集的应用程序。HDFS放宽了POSIX的一些要求，允许对文件系统数据进行流访问。HDFS最初是作为Apache Nutch web搜索引擎项目的基础设施构建的</p>
+<p>优点和缺点：</p>
+<ul>
+<li>硬件故障的自动检测和快速恢复</li>
+<li>支持流式数据访问：<br>
+HDFS的设计更多的是为批处理而设计的，而不是用户交互式使用，支持数据高吞吐量的访问是重点（HDFS is designed more for batch processing rather than interactive use by users. The emphasis is on high throughput of data access rather than low latency of data access）</li>
+<li>支持大数据集数据<br>
+数据大小gb到tb级别，因为是集群模式可以多很多节点存储数据</li>
+<li>简单一致模型<br>
+一次写入多次访问，数据一旦写入不能修改除了追加和截断数据，简化了数据一致性的问题</li>
+<li>计算的逻辑是移动计算而不是移动数据</li>
+<li>可移植性强</li>
+</ul>
+<h4 id="HDFS-架构图">HDFS 架构图</h4>
+<p><img src="/images/hdfs.png" alt="avatar"></p>
+<h5 id="NameNode-and-DataNodes">NameNode and DataNodes</h5>
+<p>HDFS 是一个主从架构的分布式系统；Namenode 是主节点   DataNode 是 从节点</p>
+<h4 id="核心设计">核心设计</h4>
+<ul>
+<li>
+<p>1.心跳机制<br>
+master和slave之间通信机制。<br>
+slave需要通过心跳(默认3秒钟)汇报自身情况给master(IPC)。<br>
+master通过心跳发送命令给slave。</p>
+<p>master判断slave挂掉超时时间:<br>
+timeout = 2 * dfs.namenode.heartbeat.recheck-interval(默认30w毫秒) + 10 * dfs.heartbeat.interval</p>
+<p>namenode: 元数据信息<br>
+内存: metadata(完整信息: 目录树 块信息(id,副本等) 块所在dn信息)<br>
+磁盘: fsimage(镜像) + 预写日志(progress)  --&gt;  缺少块所在dn信息</p>
+<p>namenode冷启动, 需要dn通过ipc连接到namenode通过心跳将信息汇报给namenode。</p>
+</li>
+<li>
+<ol start="2">
+<li>安全模式<br>
+namenode状态: active / standby / safemode</li>
+</ol>
+<p>进入安全模式原因:<br>
+hdfs集群中blk丢失率超过(0.1: 默认: dfs.namenode.safemode.threshold-pct),<br>
+此时进入safemode状态。不允许对集群操作。</p>
+<p>如何退出安全模式:<br>
+1.丢失问题解决自动退出<br>
+2.强制退出(不建议)</p>
+<p>hdfs dfsadmin -safemode enter:进入安全模式<br>
+hdfs dfsadmin -safemode leave/get/wait:退出安全模式</p>
+</li>
+</ul>
+<h4 id="副本存放策略">副本存放策略</h4>
+<pre><code>hdfs设计思路: 分散存储(分而治之),冗余备份(高可靠)  
+  考虑:安全可靠,节省带宽,负载均衡 
+   
+* 3. 存放到和client同节点的node中
+2:存放到不同的机架中(可靠)(尽可能就近选择,如果机架比较忙(满),此时需要选择其他机架)
+3:存放和第二个副本同机架的不同节点(如果第二个副本机架比较满,则选择第一个节点机架)
+
+修改副本数:
+   1.hdfs-site.xml --&gt; dfs.replication
+   2.hdfs dfs -setrep -R 2 /
+</code></pre>
+<ul>
+<li>4.负载均衡<br>
+机器磁盘利用率平衡。</li>
+</ul>
+<pre><code>命令:
+   sbin/start-balancer.sh
+   
+默认数据块移动速度1m/s
+修改带宽: 
+    命令:
+ 	  hdfs dfsadmin -setBalanacerBandwidth 10485760
+    hdfs-site.xml
+      dfs.balance.bandwidthPerSec	
+平衡标准:
+    sbin/start-balancer.sh -t 10%	
+</code></pre>
+<p>2.读写原理<br>
+写流程:<br>
+客户端:<br>
+1.申请数据传输;<br>
+2.切割块<br>
+3.向dn传输packet(队列),通过pipeline在dn链上进行数据传输和复制；<br>
+4.传输完成告知nn,更新元数据(磁盘:fsimage)。<br>
+nn：<br>
+1.接收客户端连接<br>
+2.规划数据块和副本,返回dn列表(预写日志)<br>
+3.记录元数据(blkid 目录树)<br>
+fsimage:镜像<br>
+dn:<br>
+1.创建pipeline实现文件复制<br>
+2.响应传输状态<br>
+具体流程：</p>
+<ol>
+<li>client向namenode请求连接;</li>
+<li>namenode需要进行校验(是否有权限,是否存在等),响应逻辑切分,并且返回blk分配的节点列表;</li>
+<li>client会在dn的节点之间建立pipeline,同时每个块以packet形式传输(组建packet queue),每个packet有64k的大小,同时再传输512k后需要校验;</li>
+<li>块的每个packet有client传输给在pipeline的第一个节点(缓存和data目录),由当前节点进行异步复制到pipeline的其他节点;</li>
+<li>pipeline上的节点在接收到数据之后会创建ack queue反馈给client;</li>
+<li>等到所有的block在pipeline传输完毕则client会通知namenode更新元数据;</li>
+<li>如果在pipeline中dn发生异常,则需要向nn重新申请dn节点;</li>
+<li>写入成功的标志,client写入dfs.replication.min(默认1)个副本数则表示写入成功（3个副本 第二个成功就像namenode发送成功，剩下异步发送）<br>
+读流程:<br>
+1.client请求blk和所在node节点列表<br>
+2.client从较佳的位置读取blk信息(逐个读取)<br>
+3.在通过io流读取时需要校验每个块信息(checksum)</li>
+</ol>
+<h4 id="3-namenode">3.namenode</h4>
+<p>职责:<br>
+1.负责客户端连接和响应<br>
+2.负责元数据存储和管理(目录树,blk,blk存放的节点列表,副本等)<br>
+3.负载均衡和副本存放策略<br>
+元数据: 内存+磁盘(准完整)<br>
+1)内存中的metadata: 完整的元数据(目录树,文件块信息,块存放信息,副本等)<br>
+元数据镜像文件+预写日志文件</p>
+<pre><code> 2)磁盘fsimage: 元数据镜像文件
+    历史操作日志文件进行合并创建fsimage
+	
+ 3)历史操作日志文件: edits_0000000000000000001-0000000000000000002
+     默认每小时创建操作日志保存元数据信息
+	 
+ 4)预写操作日志文件: edits_inprogress_0000000000000000245 
+ 
+ hdfs oev -i edits_0000000000000000233-0000000000000000233 -o edits.xml
+ hdfs oiv -i fsimage_0000000000000000244 -p XML -o fsimage.xml
+ 
+ * 4.checkpoint
+   由2nn每隔一段时间,将最近镜像和edit文件下载到本地合并，称为checkpoint。
+   触发: 
+     dfs.namenode.checkpoint.check.period=60 ##检查触发条件是否满足的频率，60 秒
+	dfs.namenode.checkpoint.dir=file://${hadoop.tmp.dir}/dfs/namesecondary
+	##以上两个参数做 checkpoint 操作时，secondary namenode 的本地工作目录
+	dfs.namenode.checkpoint.edits.dir=${dfs.namenode.checkpoint.dir}
+	dfs.namenode.checkpoint.max-retries=3 ##最大重试次数
+	dfs.namenode.checkpoint.period=3600 ##两次 checkpoint 之间的时间间隔 3600 秒
+	dfs.namenode.checkpoint.txns=1000000 ##两次 checkpoint 之间最大的操作记录
+</code></pre>
+<h4 id="4-datanode">4.datanode</h4>
+<p>1.职责:<br>
+保存数据块信息<br>
+通过心跳汇报自身blk状态(保证副本数,timeout)</p>
+<h4 id="完全分布式的问题：">完全分布式的问题：</h4>
+<p>namenode存在某个服务器上且只有一个，如果改节点宕机整个集群瘫痪。存在单点故障问题</p>
+<h4 id="解决-HA-模式：">解决 HA 模式：</h4>
+<p>同时启动多个namenode，但是某个时刻管理集群的只能有一个<br>
+处理机制：<br>
+两种namenode ：<br>
+active namenode:只能有一个,正在活跃的,处理dn,客户端等<br>
+元数据(块,那些个节点…内存,磁盘)</p>
+<p>备份（namenode）   standby namenode: active name的热备，active namenode的数据元是要和standby共享的<br>
+HDFS 的 HA 功能通过配置 Active/Standby 两个 NameNodes 实现在集群中对 NameNode 的 热备来解决上述问题。如果出现故障，如机器崩溃或机器需要升级维护，这时可通过此种方 式将 NameNode 很快的切换到另外一台机器。</p>
+<p>在一个典型的 HDFS(HA) 集群中，使用两台单独的机器配置为 NameNodes 。在任何时间点， 确保 NameNodes 中只有一个处于 Active 状态，其他的处在 Standby 状态。其中 ActiveNameNode 负责集群中的所有客户端操作，StandbyNameNode 仅仅充当备机，保证一 旦 ActiveNameNode 出现问题能够快速切换。</p>
+<p>为了能够实时同步 Active 和 Standby 两个 NameNode 的元数据信息（实际上 editlog），需提 供一个共享存储系统，可以是 NFS、QJM（Quorum Journal Manager）或者 Zookeeper，Active Namenode 将数据写入共享存储系统，而 Standby 监听该系统，一旦发现有新数据写入，则 读取这些数据，并加载到自己内存中，以保证自己内存状态与 Active NameNode 保持基本一 致，如此这般，在紧急情况下 standby 便可快速切为 active namenode。为了实现快速切换， Standby 节点获取集群的最新文件块信息也是很有必要的。为了实现这一目标，DataNode 需 要配置 NameNodes 的位置，并同时给他们发送文件块信息以及心跳检测。</p>
+<h4 id="回收站重要作用-防手抖把神马删啦">回收站重要作用(防手抖把神马删啦)</h4>
+<p>HDFS回收站默认是关闭的！<br>
+如果启用了垃圾配置，那么由FS Shell删除的文件不会立即从HDFS删除。相反，HDFS将它移动到垃圾目录(每个用户在/user/<username>/. trash下都有自己的垃圾目录)。只要文件仍然保留在垃圾箱中，就可以快速恢复它<br>
+配置：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span>  </span><br><span class="line">  <span class="tag">&lt;<span class="name">name</span>&gt;</span>fs.trash.interval<span class="tag">&lt;/<span class="name">name</span>&gt;</span>  </span><br><span class="line">  <span class="tag">&lt;<span class="name">value</span>&gt;</span>1440<span class="tag">&lt;/<span class="name">value</span>&gt;</span>   -- 回收站自动删除的时间 s为单位</span><br><span class="line">  <span class="tag">&lt;<span class="name">description</span>&gt;</span>Number of minutes between trash checkpoints.  </span><br><span class="line">  If zero, the trash feature is disabled.  </span><br><span class="line">  <span class="tag">&lt;/<span class="name">description</span>&gt;</span>  </span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>测试：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> hadoop fs -rm -r delete/test1</span></span><br><span class="line">Moved: hdfs://localhost:8020/user/hadoop/delete/test1 to trash at: hdfs://localhost:8020/user/hadoop/.Trash/Current</span><br><span class="line">···</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment">####  补充</span></span></span><br><span class="line">Name Quotas：hdfs目录和子目录的个数的限定</span><br><span class="line">Space Quotas：每个目录下文件占用的磁盘空间总量</span><br><span class="line">在程序没有异常的情况下，写数据到hdfs报错</span><br><span class="line">就是子目录数量超过了系统限定的数量  一下命令可以查看具体情况</span><br><span class="line">```shell</span><br><span class="line">hadoop fs -count -q [-h] [-v] [-t [comma-separated list of storagetypes]] &lt;directory&gt;...&lt;directory&gt;</span><br></pre></td></tr></table></figure>
+
+  </section>
+</article>
+
+  <div class="sharing grid">
+  <section class="profile grid-item grid">
+    <img class="avatar" src="/images/benz.jpg" alt="avatar" />
+    <div class="grid-item">
+      <p class="title"> moon pie </p>
+      <p class="subtitle"> There are two kinds of people in the world, those who have a girlfriend and those who understand binary </p>
+    <div>
+  </section>
+
+  <section class="share-btns">
+    <!-- <p> share it if you like it~ </p> -->
+    <a
+  class="twitter-share-button"
+  data-size="large"
+  data-via="DrakeLeung"
+  href="https://twitter.com/intent/tweet?text= id="这是一篇关于HDFS-的文章""
+>
+  Tweet
+</a>
+
+<script>
+  window.twttr = (function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0],
+    t = window.twttr || {};
+  if (d.getElementById(id)) return t;
+  js = d.createElement(s);
+  js.id = id;
+  js.src = "https://platform.twitter.com/widgets.js";
+  js.async = true;
+  fjs.parentNode.insertBefore(js, fjs);
+
+  t._e = [];
+  t.ready = function(f) {
+    t._e.push(f);
+  };
+
+  return t;
+}(document, "script", "twitter-wjs"));
+</script>
+
+  </section>
+</div>
+
+
+  
+    
+<section class="article-comment">
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript" target="_blank" rel="noopener">comments powered by Disqus.</a></noscript>
+  </div>
+</section>
+
+<script>
+  var disqus_shortname = 'drakeleung';
+  
+  var disqus_url = 'http://yoursite.com/2018/01/07/hdfs/';
+  
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+  
+</main>
+
+</body>
+</html>
