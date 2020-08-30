@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>HBase 简介 | moon pie</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <link rel="shortcut icon" href="/favicon.ico">
+  
+<link rel="stylesheet" href="/css/app.css">
+
+  <!-- <link rel='stylesheet' href='http://fonts.useso.com/css?family=Source+Code+Pro'> -->
+  
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <nav class="app-nav">
+  
+    
+      <a href="/.">home</a>
+    
+  
+    
+      <a href="/archives">archive</a>
+    
+  
+    
+      <a href="/atom.xml">rss</a>
+    
+  
+</nav>
+
+  <main class="post">
+  <article>
+  <h1 class="article-title">
+    <a href="/2018/01/09/hbase/">HBase 简介</a>
+  </h1>
+
+  <section class="article-meta">
+    <p class="article-date">January 09 2018</p>
+  </section>
+
+  <section class="article-entry">
+    <h3 id="这是一篇关于HBase-的文章"><a href="#这是一篇关于HBase-的文章" class="headerlink" title="这是一篇关于HBase 的文章"></a>这是一篇关于HBase 的文章</h3><hr>
+<h4 id="HBASE"><a href="#HBASE" class="headerlink" title="HBASE"></a>HBASE</h4><p>HBASE Web<br><a href="https://hbase.apache.org/" target="_blank" rel="noopener">HBASE官网</a></p>
+<h4 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h4><p>Apache HBase 是一个开源的、分布式、可伸缩、版本升级、非关系型数据库提供储大数据存储– 十亿行百万列；它是模仿 Google 的 Bigtable: 一个用于结构化数据的分布式存储系统;可以进行大数据级进行随机、实时的读 / 写访问</p>
+<h4 id="HBase-的特点"><a href="#HBase-的特点" class="headerlink" title="HBase 的特点"></a>HBase 的特点</h4><p>大：bigtable<br>    一个表可以有上十亿行，上百万列<br>面向列：<br>    严格意义上说  面向“列族|列簇”<br>稀疏：<br>    hbase中null不进行存储的<br>无模式：<br>    无严格模式–表结构<br>    读模式：数据读取的时候 进行数据校验的（读取进行字段和数量的校验）<br>        hive      —&gt;load<br>    写模式： 数据写入的时候进行数据校验的（写取进行字段和数量的校验 要相同数量和类型）<br>        mysql 5 —&gt; insert</p>
+<p>数据库特点：<br>    1）不能支持join<br>    2）所有的数据 底层存储的时候 byte[] </p>
+<h4 id="结构说明"><a href="#结构说明" class="headerlink" title="结构说明"></a>结构说明</h4><p><img src="/images/HBase.jpg" alt="avatar"></p>
+<ul>
+<li>行键 rowkey<br>表数据的一部分，一行的标识（不同行的行键是不能重复的）；一级索引会安装rowkey进行索引，行键默认的是按照 字典的升序进行排序的 – 便于创建索引</li>
+<li>列族   colum family<br>列族下拥有至少一个列 ；一个列族就是一个物理文件的存储 通常情况下降具有相同io属性的列放在同一个列族下的<br>具有相同io（读|写）属性  经常一起进行查询的字段io属性  业务相关的<br>查HBase表结构的时候 就是查出  列族的信息<br>列族不建议过多  最多不超过3个</li>
+<li>列：column<br>表数据的一部分<br>每一行的列名和对应的值  插入数据的指定的<br>每一个列  都属于一个列族的<br>定位一个列  指定列族   info01:address  info02:address</li>
+<li>数据版本|时间戳  version<br>每一个列存储的数据  可以存储多个版本的<br>存储每一个列数据的时候  默认添加一个时间戳信息  这个时间戳信息就是数据版本<br>默认每一列只存储一个版本的  最新版本<br>备注：和建表的时候指定有关系。默认只会存储一个版本<br>如果在建表的时候指定多个版本就会保存值得多个版本信息<br>create “test_shell01”,{NAME =&gt; “info01”,VERSIONS =&gt; 2},{NAME =&gt; “info02”}</li>
+<li>单元格： cell<br>HBase 中没一个列值真正的存储位置<br>行键—&gt;列族—&gt;列—&gt;时间戳—&gt;单元格（值）</li>
+</ul>
+<h4 id="完全分布式的安装步骤"><a href="#完全分布式的安装步骤" class="headerlink" title="完全分布式的安装步骤"></a>完全分布式的安装步骤</h4><p>注意事项：<br>在安装 Hbase 的时候  要考虑hadoop的版本 java的版本，版本不一致会导致冲突<br><img src="/images/hbasev.png" alt="avatar"></p>
+<p>安装准备：<br>    jdk<br>    hadoop<br>    zookeeper<br>安装节点：<br>    分布式<br>    3个节点<br>    角色： 主从  主：2Hmaster   从：3Hregionserver<br>    主： hadoop01   hadoop03<br>    从： hadoop01   hadoop02 hadoop03<br>安装版本：<br>    Hbase版本不合适  jdk hadoop 版本冲突  慎重选择版本</p>
+<pre><code>1.2.6</code></pre><p>安装：<br>1）上传<br>2）解压<br>3）修改环境变量<br>sudo vi /etc/profile<br>export HBASE_HOME=/home/hadoop/app/hbase-1.2.6<br>export PATH=$PATH:$HBASE_HOME/bin</p>
+<p>source /etc/profile<br>hbase version<br>配置文件官方文档参考路径<br><img src="/images/hbasepezhi.png" alt="avatar"></p>
+<p>4)修改hbase的配置文件<br>conf目录下<br>1.hbase-env.sh</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># 设置jdk</span></span></span><br><span class="line">export JAVA_HOME=/home/hadoop/app/jdk1.8.0_73</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># 不用habse 自身的 zookeeper</span></span></span><br><span class="line"></span><br><span class="line">export HBASE_MANAGES_ZK=false</span><br></pre></td></tr></table></figure>
+
+
+
+<p>2.hbase-site.xml </p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="comment">&lt;!-- 指定 hbase 在 HDFS 上存储的路径 --&gt;</span></span><br><span class="line"> <span class="tag">&lt;<span class="name">name</span>&gt;</span>hbase.rootdir<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"> <span class="tag">&lt;<span class="name">value</span>&gt;</span>hdfs://bd1904/user/hbase<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"> <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"> </span><br><span class="line"> <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="comment">&lt;!-- 指定 hbase 是分布式的 --&gt;</span></span><br><span class="line"> <span class="tag">&lt;<span class="name">name</span>&gt;</span>hbase.cluster.distributed<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"> <span class="tag">&lt;<span class="name">value</span>&gt;</span>true<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"> <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"> </span><br><span class="line"> <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="comment">&lt;!-- 指定 zk 的地址，多个用“,”分割 --&gt;</span></span><br><span class="line"> <span class="tag">&lt;<span class="name">name</span>&gt;</span>hbase.zookeeper.quorum<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"> <span class="tag">&lt;<span class="name">value</span>&gt;</span>hadoop01:2181,hadoop02:2181,hadoop03:2181<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"> <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+
+<p>3.regionservers<br>从节点配置文件  一行一个</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">hadoop01</span><br><span class="line">hadoop02</span><br><span class="line">hadoop03</span><br></pre></td></tr></table></figure>
+
+
+
+<p>4.创建一个文件  指定备份的master节点的位置<br><strong>vi backup-masters</strong></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"><span class="comment">#指定  要在哪台服务 备份 masters 的服务 ： </span></span></span><br><span class="line">hadoop03</span><br></pre></td></tr></table></figure>
+
+<p>5.将hadoop的  hdfs-site.xml   core-site.xml拷贝到habse的conf目录下</p>
+<h4 id="HBase-shell-操作"><a href="#HBase-shell-操作" class="headerlink" title="HBase shell 操作"></a>HBase shell 操作</h4><p>启动hbase的客户端</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">hbase shell</span><br></pre></td></tr></table></figure>
+
+<p>help 查看帮助文档  文档中可以分为以下的几类操作</p>
+<p>help command   查询某一个命令的详细使用</p>
+<h5 id="Group-name-general"><a href="#Group-name-general" class="headerlink" title="Group name: general"></a>Group name: general</h5><p>  Commands: status, table_help, version, whoami</p>
+<p>1）status 查看集群的状态信息<br>2）version hbase版本信息<br>3）whoami 当前用户的</p>
+<p>Group name: namespace   类似于传统关系型数据库的database<br>  Commands: alter_namespace, create_namespace, describe_namespace, drop_namespace, list_namespace, list_namespace_tables<br>hbase的namesapce相关操作  在  hbase中弱化database的概念<br>默认有一个namespace   default<br>1）创建namespace<br>create_namespace<br>help “create_namespace”<br>create_namespace ‘ns1’<br>create_namespace “database”</p>
+<p>2)查看所有namedspace<br>list_namespace</p>
+<p>3)查看namespace的描述<br>describe_namespace “database”</p>
+<p>4)删除 namespace<br>drop_namespace “database”</p>
+<p>5)list_namespace_tables  显示指定 namespace下的表<br>list_namespace_tables “hbase</p>
+<h5 id="Group-name-ddl"><a href="#Group-name-ddl" class="headerlink" title="Group name: ddl"></a>Group name: ddl</h5><p>  Commands: alter, alter_async, alter_status, create, describe, disable, disable_all, drop, drop_all, enable, enable_all, exists, get_table, is_disabled, is_enabled, list, locate_region, show_filters</p>
+<p>1)建表<br>help “create”<br>create ‘表名’,’列族’<br>create ‘t1’, ‘f1’, ‘f2’, ‘f3’  简写  所有的属性默认值</p>
+<p>指定属性值</p>
+<p>create “表名”,{NAME =&gt; “列族1”,VERSIONS =&gt; 2},{NAME =&gt; “列族2”}</p>
+<p>指定在哪个库下建表<br>create ‘库名：表名’，’列族’<br>create “testdatabase:test_shell”,”info01”,”info02”</p>
+<p>2)查看表列表<br>list<br>    查看所有的表列表<br>list_namespace_tables  指定namespace的表<br>    list_namespace_tables “bd1904”<br>3)查看表的详细描述信息<br>describe desc<br>describe “testdatabase:test_shell”</p>
+<p>4)修改表<br>    修改表属性<br>    alter “表名”，{NAME=&gt; ,VERSIONS=&gt;}<br>    alter “bd:test_shell”,{NAME =&gt; “info01”,VERSIONS =&gt;2}<br>    删除列族<br>    alter ‘ns1:t1’, NAME =&gt; ‘f1’, METHOD =&gt; ‘delete’<br>    alter ‘ns1:t1’, ‘delete’ =&gt; ‘f1’<br>    alter “bd:test_shell”,”delete” =&gt; “info01”<br>    添加列族<br>    alter “表名”，{NAME=&gt; ,VERSIONS=&gt;}<br>    alter “bd:test_shell”,{NAME=&gt;”info01”,VERSIONS=&gt; 2}</p>
+<p>5)表的启用  和  禁用<br>hbase中的表的状态  2种   启动  禁用  默认表状态  启用<br>disable  禁用表<br>    disable “bd1904:test_shell”<br>disable_all<br>    禁用某一个namespace下的所有表<br>    disable_all “namespace:.*”<br>    is_disabled 表是否被禁用  true 禁用  false 启用</p>
+<p>enable  启用表<br>enable_all<br>    启用所有<br>    enable_all “bd:.*”<br>is_enabled<br>    is_enabled “bd:test_shell”</p>
+<p>6)删除表<br>先禁用表<br>disable “default:.*”<br>drop “bd:test_shell”<br>disable_all default:.*<br>drop_all “default:.*”</p>
+<h5 id="Group-name-dml"><a href="#Group-name-dml" class="headerlink" title="Group name: dml"></a>Group name: dml</h5><p>  Commands: append, count, delete, deleteall, get, get_counter, get_splits, incr, put, scan, truncate, truncate_preserve<br>1)数据插入<br>shell 一次只能插入一个单元格的数据<br>行健   列  列值<br>help “put”<br>put ‘namespace:表名’, ‘行健’, ‘列族：列’, ‘值’,时间戳|版本</p>
+<p>2）查询单条数据  get<br>get ‘表名’, ‘行健’<br>eg:<br>get “table2”,”rk0001”<br>指定版本信息查询  定位一个单元格  查询一行指定版本的<br>get ‘表名’, ‘行健’, {COLUMN =&gt; ‘列族：列’, TIMESTAMP =&gt; 时间戳}</p>
+<p>get “user_info”,”rk0001”,{COLUMN =&gt; “base_info:name”,TIMESTAMP=&gt; 1565468018012}</p>
+<p>Scan<br>3）表扫描数据  scan<br>默认扫描只会显示多版本列的最新值<br>如果要查多版本的值<br>get ‘table2’, ‘rk001’,{COLUMNS=&gt;[‘f1:hh’],VERSIONS=&gt;2}<br>scan ‘table2’,{COLUMNS =&gt; [‘f1:hh’],VERSIONS=&gt;2}</p>
+<p>scan “表名”<br>scan “test_shell”<br>指定需要扫描的列<br>hbase&gt; scan ‘表名’, {COLUMNS =&gt; ‘列’}<br>scan “user_info”,{COLUMNS =&gt; [“base_info:name”,”base_info:age”]}</p>
+<p>指定需要扫描的起始行健   从起始行健开始扫描<br>hbase&gt; scan ‘ns1:t1’, {COLUMNS =&gt; [‘c1’, ‘c2’],STARTROW =&gt; ‘xyz’}<br>eg:<br>scan “user_info”,{COLUMNS =&gt; “base_info:name”,STARTROW =&gt; “rk0001”}</p>
+<p>指定需要扫描的结束行健<br>hbase&gt; scan ‘t1’, {COLUMNS =&gt; [‘c1’, ‘c2’], STARTROW =&gt;””, ENDROW =&gt; ‘xyz’}<br>eg:<br>scan “user_info”,{COLUMNS =&gt; “base_info:age”,STARTROW =&gt; “rk0001”,ENDROW =&gt; “zhangsan_20150701_0005”}</p>
+<p>含头不含尾</p>
+<p>指定从起始行健开始  需要返回的数据条数    LIMIT=&gt;5<br>eg:<br>scan “user_info”,{COLUMNS =&gt; [“base_info:name”,”base_info:age”],LIMIT =&gt; 5}<br>默认从第一条数据开始扫描的</p>
+<p>scan “user_info”,{COLUMNS =&gt; [“base_info:name”,”base_info:age”],STARTROW=&gt; “rk0001”,LIMIT =&gt; 5}</p>
+<p>指定时间戳范围的数据   效率不高  所有时间戳范围内的数据<br>hbase&gt; scan ‘t1’, {COLUMNS =&gt; ‘c1’, TIMERANGE =&gt; [1303668804, 1303668904]}</p>
+<p>scan “user_info”,{COLUMNS =&gt; “base_info:age”,TIMERANGE =&gt; [1565468004512,1565468005371]}</p>
+<p>hbase中数据查询的方式：<br>1）全表扫描<br>2）指定rowkey范围进行扫描<br>3）单条数据查询</p>
+<h4 id="HBase-中的核心概念"><a href="#HBase-中的核心概念" class="headerlink" title="HBase 中的核心概念"></a>HBase 中的核心概念</h4><p><img src="/image/hfile.png" alt="avatar"><br>1）region：  分区<br>   每一个表的数据  都需要进行划分多个region ；region 对hbase表的行的方向上的划分<br>  一个region代表的是一个表中  多行数据   一定行健范围的数据<br> region 是hbase进行 分布式存储的最小单位   负载均衡的最小单位  不是物理存储的最小单位<br>  一个region不可再进行分割的在进行分布式存储的时候   一个region最终只能存储在一个hbase 节点上（hregionserver）  一个hregionserver 上可以存储多个region<br>  <strong>备注：</strong><br>  每一个hbase表进行创建的时候  没有指定的话默认只有一个region<br>  <figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">name</span>&gt;</span>hbase.hregion.max.filesize<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">value</span>&gt;</span>10737418240<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">description</span>&gt;</span></span><br><span class="line">  Maximum HStoreFile size. If any one of a column families' HStoreFiles has</span><br><span class="line">  grown to exceed this value, the hosting HRegion is split in two.<span class="tag">&lt;/<span class="name">description</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br></pre></td></tr></table></figure><br>每一个region中一个列族的物理文件达到10G 才进行切分: 按照rowkey的中间值进行切分的; 每一个region 都会有一个全局唯一的一个编号<br>一个region切分为2个region  一旦切分完成 就会面临新的region的重新分配 hmaster决定每一个region存储在哪一个hregionserver节点上<br>2）Store<br>一个Store对应一个列族<br>hbase 物理存储的最小单元<br>1region—&gt;多个Store —-&gt; 1 列族<br>一个Store中  进行存储的时候  包含一个memestore 和0-多个storefile<br>3）memstore 内存<br>每一个Store 中   都会有一块内存存储空间<br>写入数据的时候  每一个Store中的数据  先写入到memstore<br>读取数据的时候  先从内存中读取  memstore<br>4)storefile   文件  磁盘文件<br>memstore 中达到一定的阈值时候  就会进行数据flush   形成一个个的storefile </p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">name</span>&gt;</span>hbase.hregion.memstore.flush.size<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">value</span>&gt;</span>134217728<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">description</span>&gt;</span></span><br><span class="line">    Memstore will be flushed to disk if size of the memstore</span><br><span class="line">    exceeds this number of bytes.  Value is checked by a thread that runs</span><br><span class="line">    every hbase.server.thread.wakefrequency.<span class="tag">&lt;/<span class="name">description</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>memstore 最终达到阈值  128M 的时候就会进行flush<br>5）hfile<br>最终storefile文件  写入到hdfs的   hfile文件  最终<br>6）wal   write-ahead-log 写前日志文件   预写日志文件   hlog<br>防止memstore中的数据丢失  容错<br>写入数据之前  会先将数据操作  写入到  wal中<br>一个regionserver   中存储一个wal文件</p>
+<h4 id="HBase-的寻址机制"><a href="#HBase-的寻址机制" class="headerlink" title="HBase 的寻址机制"></a>HBase 的寻址机制</h4><h5 id="0-96-版本之后的"><a href="#0-96-版本之后的" class="headerlink" title="0.96 版本之后的"></a>0.96 版本之后的</h5><p>原始表存储原始数据<br>.mata 表 存储原始数据的索引  .meta表的索引数据不会在split<br>通过zk 寻找 .meta表的regionserver 的路径</p>
+<p>寻址过程：<br>    * 客户端先去访问zk，获取.meta表的存储 regionserver的服务器的路径 以及存储数据 region的编号<br>        * 访问.meta 表的region 获取  原始表对应 regionserver的服务器路径 及region的编号<br>        * 真正访问数据在regionserver  的region 表对应的数据</p>
+<h4 id="Hbase-的读写"><a href="#Hbase-的读写" class="headerlink" title="Hbase 的读写"></a>Hbase 的读写</h4><h5 id="写流程"><a href="#写流程" class="headerlink" title="写流程"></a>写流程</h5><ul>
+<li><p>客户端根据 rowkey 进过两次的寻址 找到数据所在的 regionServer</p>
+</li>
+<li><p>client 向regionServer 提交请求</p>
+</li>
+<li><p>regionServer 找到 目标region</p>
+</li>
+<li><p>region 检查数据是否和 schema（表结构）一致则写入，不一致则返回报错</p>
+</li>
+<li><p>如果客户端没有指定版本，则获取当前系统时间作为数据版本数据</p>
+</li>
+<li><p>将更新写入 WAL log</p>
+</li>
+<li><p>将更新写入对应的store中的 Memstore</p>
+</li>
+<li><p>判断 Memstore 的是否需要 flush 为 Storefile 文件。<br>当阈值  memstore 文件大小  达到128M 的时候 开始执行flush  形成多个storefile文件</p>
+</li>
+<li><p><em>细节补充：其中中有两个数据的合并*</em><br>minor compact：<br>将多个（3个）storefile 合并为 1个storefile文件</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>hbase.hstore.compactionThreshold<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">value</span>&gt;</span>3<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">description</span>&gt;</span></span><br><span class="line">        If more than this number of HStoreFiles in any one HStore</span><br><span class="line">        (one HStoreFile is written per flush of memstore) then a compaction</span><br><span class="line">        is run to rewrite all HStoreFiles files as one.  Larger numbers</span><br><span class="line">        put off compaction but when it runs, it takes longer to complete.<span class="tag">&lt;/<span class="name">description</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>说明：不会对存储HDFS中的数据进行删除  将需要删除的数据打了标记；客户端不可见<br>major compact:<br>默认7天触发一次  将7天的多个hfile   合并为1hfile </p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>hbase.hregion.majorcompaction<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">value</span>&gt;</span>604800000<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">description</span>&gt;</span>The time (in miliseconds) between 'major' compactions of all</span><br><span class="line">        HStoreFiles in a region.  Default: Set to 7 days.  Major compactions tend to</span><br><span class="line">        happen exactly when you need them least so enable them such that they run at</span><br><span class="line">        off-peak for your deploy; or, since this setting is on a periodicity that is</span><br><span class="line">        unlikely to match your loading, run the compactions via an external</span><br><span class="line">        invocation out of a cron job or some such.<span class="tag">&lt;/<span class="name">description</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>说明：major compact：进行数据的真正删除 将所有的需要删除的数据进行真正的在HDFS中进行合并并删除</p>
+<pre><code>1）执行delete操作的数据
+2）版本超过给定需要保存的版本的数据  过期版本数据</code></pre></li>
+<li><p>判断一个store中的所有文件的总大小是否达到region切分的标准</p>
+</li>
+<li><p>达到region切分的标准  就会region切分  hmaster 进行新的region的重新分配  </p>
+</li>
+</ul>
+<h4 id="读流程"><a href="#读流程" class="headerlink" title="读流程"></a>读流程</h4><ul>
+<li><p>客户端根据 rowkey 经过两次的寻址机制找到对应数据的 region 所在的regionServer 所在的服务器的路径</p>
+</li>
+<li><p>客户端开始想对应的regionServer的region发送读的请求</p>
+</li>
+<li><p>客户端会先在region的对应的 store的 memstore(blockcase)中进行读取</p>
+</li>
+<li><p>memstore 有数据  直接返回  </p>
+</li>
+<li><p>没有数据   到hfile 文件中进行读取  磁盘读取</p>
+<h4 id="各个角色的职责"><a href="#各个角色的职责" class="headerlink" title="各个角色的职责"></a>各个角色的职责</h4><h5 id="hmaster-："><a href="#hmaster-：" class="headerlink" title="hmaster ："></a>hmaster ：</h5><p>1）进行region的分配<br>每一个region 分到哪一个regionserver上<br>2）负责 RegionServer 的负载均衡<br>3）通过zk发现失效的 RegionServer 并重新分配其上的 region<br>4）HDFS 上的垃圾文件（hbase）回收<br>5）处理 schema 更新请求（表的创建，删除，修改，列簇的增加等等）将schema 写入zk中</p>
+</li>
+</ul>
+<h5 id="hregionserver："><a href="#hregionserver：" class="headerlink" title="hregionserver："></a>hregionserver：</h5><p>1）管理上面的region<br>2)每一个regioin的分裂</p>
+<h5 id="zookeeper"><a href="#zookeeper" class="headerlink" title="zookeeper:"></a>zookeeper:</h5><p>1)进行hmaster的active的选举<br>2）存储hbase的寻址机制<br>3）存储regionserver的存活状态  master通过zk获取每一个regionserver的状态的<br>4）存储表的schema 表结构</p>
+
+  </section>
+</article>
+
+  <div class="sharing grid">
+  <section class="profile grid-item grid">
+    <img class="avatar" src="/images/benz.jpg" alt="avatar" />
+    <div class="grid-item">
+      <p class="title"> moon pie </p>
+      <p class="subtitle"> There are two kinds of people in the world, those who have a girlfriend and those who understand binary </p>
+    <div>
+  </section>
+
+  <section class="share-btns">
+    <!-- <p> share it if you like it~ </p> -->
+    <a
+  class="twitter-share-button"
+  data-size="large"
+  data-via="DrakeLeung"
+  href="https://twitter.com/intent/tweet?text= id="这是一篇关于HBase-的文章"
+>
+  Tweet
+</a>
+
+<script>
+  window.twttr = (function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0],
+    t = window.twttr || {};
+  if (d.getElementById(id)) return t;
+  js = d.createElement(s);
+  js.id = id;
+  js.src = "https://platform.twitter.com/widgets.js";
+  js.async = true;
+  fjs.parentNode.insertBefore(js, fjs);
+
+  t._e = [];
+  t.ready = function(f) {
+    t._e.push(f);
+  };
+
+  return t;
+}(document, "script", "twitter-wjs"));
+</script>
+
+  </section>
+</div>
+
+
+  
+    
+<section class="article-comment">
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript" target="_blank" rel="noopener">comments powered by Disqus.</a></noscript>
+  </div>
+</section>
+
+<script>
+  var disqus_shortname = 'drakeleung';
+  
+  var disqus_url = 'http://yoursite.com/2018/01/09/hbase/';
+  
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+  
+</main>
+
+</body>
+</html>
