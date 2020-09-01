@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>hive 分区表的测试 | moon pie</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <link rel="shortcut icon" href="/favicon.ico">
+  
+<link rel="stylesheet" href="/css/app.css">
+
+  <!-- <link rel='stylesheet' href='http://fonts.useso.com/css?family=Source+Code+Pro'> -->
+  
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <nav class="app-nav">
+  
+    
+      <a href="/.">home</a>
+    
+  
+    
+      <a href="/archives">archive</a>
+    
+  
+    
+      <a href="/atom.xml">rss</a>
+    
+  
+</nav>
+
+  <main class="post">
+  <article>
+  <h1 class="article-title">
+    <a href="/2017/02/03/hive%20%E5%88%86%E5%8C%BA%E8%A1%A8%E7%9A%84%E6%B5%8B%E8%AF%95%20/">hive 分区表的测试</a>
+  </h1>
+
+  <section class="article-meta">
+    <p class="article-date">February 03 2017</p>
+  </section>
+
+  <section class="article-entry">
+    <h4 id="这是关于hive的分区测试"><a href="#这是关于hive的分区测试" class="headerlink" title="这是关于hive的分区测试"></a>这是关于hive的分区测试</h4><figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">以部门（dept）为分区字段,在表的目录下创建分区的目录，把数据导入到对应的分区目录下</span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> <span class="keyword">if</span> <span class="keyword">not</span> <span class="keyword">exists</span> stu_ptn(<span class="keyword">id</span> <span class="built_in">int</span>,<span class="keyword">name</span> <span class="keyword">string</span>,sex <span class="keyword">string</span>,age <span class="built_in">int</span>) partitioned <span class="keyword">by</span> (dept <span class="keyword">string</span>) <span class="keyword">row</span> <span class="keyword">format</span> <span class="keyword">delimited</span> <span class="keyword">fields</span> <span class="keyword">terminated</span> <span class="keyword">by</span> <span class="string">","</span>;</span><br><span class="line"></span><br><span class="line">分区字段不能出现在建表语句中</span><br></pre></td></tr></table></figure>
+<p><img src="/images/1598929560437.png" alt="avatar">)]<img src="/images/1598929676317.png" alt="avatar"><br><img src="/images/1598929500368.png" alt="avatar"></p>
+<h4 id="向分区表中添加分区字段才能显示目录下的数据"><a href="#向分区表中添加分区字段才能显示目录下的数据" class="headerlink" title="向分区表中添加分区字段才能显示目录下的数据"></a>向分区表中添加分区字段才能显示目录下的数据</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> stu_ptn <span class="keyword">add</span> <span class="keyword">if</span> <span class="keyword">not</span> <span class="keyword">exists</span> <span class="keyword">partition</span>(dept=<span class="string">'IS'</span>)   location <span class="string">'/user/hive/warehouse/stu_ptn/IS'</span>;</span><br></pre></td></tr></table></figure>
+<h4 id="对比没有alter-table-添加分区表的数据结果"><a href="#对比没有alter-table-添加分区表的数据结果" class="headerlink" title="对比没有alter table 添加分区表的数据结果"></a>对比没有alter table 添加分区表的数据结果</h4><p><img src="/images/1598929898708.png" alt="avatar"><br><img src="/images/1598929935018.png" alt="avatar"></p>
+<h4 id="最后补充下-修改某个分区-指定的路径"><a href="#最后补充下-修改某个分区-指定的路径" class="headerlink" title="最后补充下 修改某个分区 指定的路径"></a>最后补充下 修改某个分区 指定的路径</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> stu_ptn <span class="keyword">partition</span>(dept=<span class="string">'IS'</span>)  <span class="keyword">set</span> location <span class="string">'/user/hive/warehouse/stu_ptn/IS'</span>;</span><br></pre></td></tr></table></figure>
+
+
+  </section>
+</article>
+
+  <div class="sharing grid">
+  <section class="profile grid-item grid">
+    <img class="avatar" src="/images/benz.jpg" alt="avatar" />
+    <div class="grid-item">
+      <p class="title"> moon pie </p>
+      <p class="subtitle"> There are two kinds of people in the world, those who have a girlfriend and those who understand binary </p>
+    <div>
+  </section>
+
+  <section class="share-btns">
+    <!-- <p> share it if you like it~ </p> -->
+    <a
+  class="twitter-share-button"
+  data-size="large"
+  data-via="DrakeLeung"
+  href="https://twitter.com/intent/tweet?text= id="这是关于hive的分区测试">"
+>
+  Tweet
+</a>
+
+<script>
+  window.twttr = (function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0],
+    t = window.twttr || {};
+  if (d.getElementById(id)) return t;
+  js = d.createElement(s);
+  js.id = id;
+  js.src = "https://platform.twitter.com/widgets.js";
+  js.async = true;
+  fjs.parentNode.insertBefore(js, fjs);
+
+  t._e = [];
+  t.ready = function(f) {
+    t._e.push(f);
+  };
+
+  return t;
+}(document, "script", "twitter-wjs"));
+</script>
+
+  </section>
+</div>
+
+
+  
+    
+<section class="article-comment">
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript" target="_blank" rel="noopener">comments powered by Disqus.</a></noscript>
+  </div>
+</section>
+
+<script>
+  var disqus_shortname = 'drakeleung';
+  
+  var disqus_url = 'http://yoursite.com/2017/02/03/hive%20%E5%88%86%E5%8C%BA%E8%A1%A8%E7%9A%84%E6%B5%8B%E8%AF%95%20/';
+  
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+  
+</main>
+
+</body>
+</html>
